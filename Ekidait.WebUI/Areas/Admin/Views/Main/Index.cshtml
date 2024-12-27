@@ -1,0 +1,94 @@
+﻿@{
+    ViewData["Title"] = "Admin Paneli";
+}
+<div id="notification" style="display: none;" class="alert alert-info"></div>
+
+<!-- Grafik için Canvas -->
+<canvas id="categoryChart" width="400" height="200"></canvas>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // SignalR bağlantısı oluştur
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/general-hub")
+            .configureLogging(signalR.LogLevel.Information)
+            .build();
+
+        // Grafik verilerini saklamak için bir değişken
+        let categoryCount = 0;
+
+        // Chart.js ile grafik yapılandırması
+        const ctx = document.getElementById('categoryChart').getContext('2d');
+        const categoryChart = new Chart(ctx, {
+            type: 'line', // Çizgi grafik
+            data: {
+                labels: [], // Zaman etiketleri
+                datasets: [{
+                    label: 'Kategori Sayısı',
+                    data: [], // Grafik verileri (kategori sayısı)
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    fill: false
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Zaman'
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Kategori Sayısı'
+                        },
+                        min: 0
+                    }
+                }
+            }
+        });
+
+        // SignalR bildirimlerini dinle
+        connection.on("onCategoryAdd", (message) => {
+            categoryCount++; // Kategori eklenince sayıyı arttır
+            updateChart(message, "Kategori Eklendi");
+        });
+
+        connection.on("onCategoryUpdate", (message) => {
+            updateChart(message, "Kategori Güncellendi");
+        });
+
+        connection.on("onCategoryDelete", (message) => {
+            categoryCount--; // Kategori silinince sayıyı azalt
+            updateChart(message, "Kategori Silindi");
+        });
+
+        // Grafik güncellemeyi sağlayan fonksiyon
+        function updateChart(message, action) {
+            // Grafik verilerini güncelle
+            const now = new Date().toLocaleTimeString(); // Zaman etiketi
+            categoryChart.data.labels.push(now); // Zaman etiketini ekle
+            categoryChart.data.datasets[0].data.push(categoryCount); // Yeni kategori sayısını ekle
+            categoryChart.update(); // Grafiği güncelle
+
+            // Bildirim gösterme
+            const notificationDiv = document.getElementById("notification");
+            notificationDiv.style.display = "block";
+            notificationDiv.innerHTML = action + ": " + message;
+            setTimeout(() => {
+                notificationDiv.style.display = "none";
+            }, 5000);
+        }
+
+        // SignalR bağlantısını başlat
+        connection.start().then(() => {
+            console.log("SignalR bağlantısı başarılı!");
+        }).catch(err => console.error("SignalR bağlantısı hatalı: " + err.toString()));
+    </script>
+}

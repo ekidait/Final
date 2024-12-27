@@ -1,0 +1,91 @@
+﻿@model List<Product>
+@{
+    ViewData["Title"] = "Favorilerim";
+}
+<section class="container my-5">
+    <div class="text-center">
+        <h1>Favorilerim</h1>
+    </div>
+    <div class="row">
+        <div class="col-md-10">
+            <div class="table-responsive">
+                @if (Model.Any())
+                {
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>Ürün</th>
+                                <th>Fiyat</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr id="product-@item.Id">
+                                    <td>
+                                        <img src="~/Image/Products/@item.Image" alt="" height="50" />
+                                    </td>
+                                    <td>
+                                        <a class="nav-link text-dark" href="/Products/Details/@item.Id">
+                                            @item.Name
+                                        </a>
+                                    </td>
+                                    <td>
+                                        @item.Price.ToString("c");
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-danger remove-favorite" data-id="@item.Id" style="box-shadow: none">
+                                            <i class="bi bi-x-lg"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="container">
+                        <div class="alert-warning my-5">
+                            <h3>Favorilerinizde Ürün Bulunmamaktadır!</h3>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Favori silme işlemi
+            $(".remove-favorite").click(function (e) {
+                e.preventDefault();
+                var productId = $(this).data("id");
+
+                // Ajax isteği
+                $.ajax({
+                    url: '/Favorites/Remove',
+                    type: 'POST',
+                    data: { ProductId: productId },
+                    success: function (response) {
+                        if (response.success) {
+                            // Silinen ürün satırını kaldır
+                            $("#product-" + productId).remove();
+                            
+                        } else {
+                            alert(response.message);
+                        }
+                    },
+                    error: function () {
+                        alert("Bir hata oluştu.");
+                    }
+                });
+            });
+        });
+    </script>
+}
